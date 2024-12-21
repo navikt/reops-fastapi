@@ -11,7 +11,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code into the container
-COPY main.py .
 COPY app/ ./app
 
 # Command to run the FastAPI app using uvicorn
