@@ -1,0 +1,30 @@
+apiVersion: nais.io/v1alpha1
+kind: Application
+
+metadata:
+  labels:
+    team: team-researchops
+  name: reops-fastapi
+  namespace: team-researchops
+spec:
+  image: "{{ image }}"
+  port: 8080
+  replicas:
+    max: 1
+    min: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  ingresses:
+    - https://fastapi.ansatt.nav.no/
+  liveness:
+    path: /is_alive
+    initialDelay: 20
+    periodSeconds: 6
+    timeout: 2
+  readiness:
+    path: /is_ready
+    initialDelay: 20
+    periodSeconds: 6
+    timeout: 10
