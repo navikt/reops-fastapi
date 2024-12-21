@@ -9,3 +9,11 @@ def read_root():
 @app.get("/hello")
 def read_root():
     return {"message": "Hello world!"}
+
+@app.get("/isalive")
+def read_root():
+    return {"message": "Alive"}
+
+@app.get("/isready")
+def read_root():
+    return {"message": "Ready"}

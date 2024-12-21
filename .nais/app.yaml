@@ -19,12 +19,12 @@ spec:
   ingresses:
     - https://fastapi.ansatt.nav.no
   liveness:
-    path: /is_alive
+    path: /isalive
     initialDelay: 20
     periodSeconds: 6
     timeout: 2
   readiness:
-    path: /is_ready
+    path: /isready
     initialDelay: 20
     periodSeconds: 6
     timeout: 10
