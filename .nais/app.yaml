@@ -17,7 +17,7 @@ spec:
       cpu: 50m
       memory: 128Mi
   ingresses:
-    - https://fastapi.ansatt.nav.no/
+    - https://fasterapi.ansatt.nav.no
   liveness:
     path: /is_alive
     initialDelay: 20
