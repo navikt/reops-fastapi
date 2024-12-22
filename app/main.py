@@ -1,16 +1,17 @@
 import os
 import logging
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
 from databases import Database
 import datetime
 from dotenv import load_dotenv
+from fastapi.responses import JSONResponse
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 # Retrieve the DATABASE_URL environment variable
@@ -28,6 +29,16 @@ class Analytics(BaseModel):
     website_id: int
     url: str
 
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request, exc):
+    logger.error(f"Unhandled error: {exc}")
+    return Response(
+        content='{"message": "An internal server error occurred. Please try again later."}',
+        media_type="application/json",
+        status_code=500
+    )
+
 @app.on_event("startup")
 async def startup():
     retries = 5
@@ -41,7 +52,8 @@ async def startup():
             if i < retries - 1:
                 await asyncio.sleep(2 ** i)  # Exponential backoff
             else:
-                raise e
+                logger.critical("Could not connect to the database after retries. Exiting application.")
+                raise SystemExit("Database connection failed.")
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -59,8 +71,12 @@ async def add_stats(analytics: Analytics):
         "url": analytics.url,
         "timestamp": datetime.datetime.utcnow()  # Use datetime object
     }
-    await database.execute(query=query, values=values)
-    return {"message": "Stats added successfully"}
+    try:
+        await database.execute(query=query, values=values)
+        return {"message": "Stats added successfully"}
+    except Exception as e:
+        logger.error(f"Failed to insert stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to add stats.")
 
 @app.get("/events")
 async def get_events():
@@ -83,5 +99,10 @@ def read_isalive():
     return {"message": "Alive"}
 
 @app.get("/isready")
-def read_isready():
-    return {"message": "Ready"}
+async def read_isready():
+    try:
+        await database.execute("SELECT 1")  # Simple query to check database readiness
+        return {"message": "Ready"}
+    except Exception as e:
+        logger.error(f"Readiness check failed: {e}")
+        return {"message": "Not ready", "details": str(e)}, 503
