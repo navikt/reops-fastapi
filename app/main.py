@@ -16,10 +16,8 @@ logger = logging.getLogger(__name__)
 # Retrieve the DATABASE_URL environment variable
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Log the DATABASE_URL to verify it is loaded correctly
-if DATABASE_URL:
-    logger.info(f"DATABASE_URL is set to: {DATABASE_URL}")
-else:
+# Check if the DATABASE_URL environment variable is set
+if not DATABASE_URL:
     logger.error("DATABASE_URL is not set. Please check your environment variables.")
 
 # Initialize the database connection
