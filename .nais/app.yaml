@@ -27,12 +27,12 @@ spec:
     - https://fastapi.intern.nav.no
     - https://fastapi.nav.no/stats
   liveness:
-    path: /isalive
+    path: /api/isalive
     initialDelay: 20
     periodSeconds: 6
     timeout: 2
   readiness:
-    path: /isready
+    path: /api/isready
     initialDelay: 20
     periodSeconds: 6
     timeout: 10

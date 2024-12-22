@@ -28,7 +28,7 @@ app = FastAPI()
 class Analytics(BaseModel):
     website_id: int
     url: str
-
+    event_type: str
 
 @app.exception_handler(Exception)
 async def generic_exception_handler(request, exc):
@@ -60,7 +60,7 @@ async def shutdown():
     await database.disconnect()
     logger.info("Database connection closed.")
 
-@app.post("/stats")
+@app.post("/api/send")
 async def add_stats(analytics: Analytics):
     query = """
         INSERT INTO analytics (website_id, url, timestamp)
@@ -78,7 +78,7 @@ async def add_stats(analytics: Analytics):
         logger.error(f"Failed to insert stats: {e}")
         raise HTTPException(status_code=500, detail="Failed to add stats.")
 
-@app.get("/events")
+@app.get("/api/data")
 async def get_events():
     query = """
         SELECT * FROM analytics
@@ -86,15 +86,11 @@ async def get_events():
     results = await database.fetch_all(query=query)
     return {"events": [dict(result) for result in results]}
 
-@app.get("/")
-def read_root():
-    return {"message": "Hello, FastAPI!"}
-
-@app.get("/isalive")
+@app.get("/api/isalive")
 def read_isalive():
     return {"message": "Alive"}
 
-@app.get("/isready")
+@app.get("/api/isready")
 async def read_isready():
     try:
         await database.execute("SELECT 1")  # Simple query to check database readiness
