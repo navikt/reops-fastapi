@@ -1,14 +1,28 @@
 import os
+import logging
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from databases import Database
 import datetime
 from dotenv import load_dotenv
 
-load_dotenv()  # Load environment variables from .env file
+# Load environment variables from .env file
+load_dotenv()
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Retrieve the DATABASE_URL environment variable
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# Log the DATABASE_URL to verify it is loaded correctly
+if DATABASE_URL:
+    logger.info(f"DATABASE_URL is set to: {DATABASE_URL}")
+else:
+    logger.error("DATABASE_URL is not set. Please check your environment variables.")
+
+# Initialize the database connection
 database = Database(DATABASE_URL)
 app = FastAPI()
 
@@ -18,11 +32,23 @@ class Analytics(BaseModel):
 
 @app.on_event("startup")
 async def startup():
-    await database.connect()
+    retries = 5
+    for i in range(retries):
+        try:
+            await database.connect()
+            logger.info("Database connection established.")
+            break
+        except Exception as e:
+            logger.error(f"Database connection failed: {e}")
+            if i < retries - 1:
+                await asyncio.sleep(2 ** i)  # Exponential backoff
+            else:
+                raise e
 
 @app.on_event("shutdown")
 async def shutdown():
     await database.disconnect()
+    logger.info("Database connection closed.")
 
 @app.post("/stats")
 async def add_stats(analytics: Analytics):
