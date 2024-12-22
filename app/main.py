@@ -62,6 +62,14 @@ async def add_stats(analytics: Analytics):
     await database.execute(query=query, values=values)
     return {"message": "Stats added successfully"}
 
+@app.get("/events")
+async def get_events():
+    query = """
+        SELECT * FROM analytics
+    """
+    results = await database.fetch_all(query=query)
+    return {"events": [dict(result) for result in results]}
+
 @app.get("/")
 def read_root():
     return {"message": "Hello, FastAPI!"}
