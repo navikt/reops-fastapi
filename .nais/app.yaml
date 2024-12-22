@@ -24,6 +24,7 @@ spec:
         - ipv4: 34.88.239.95
   ingresses:
     - https://fastapi.ansatt.nav.no
+    - https://fastapi.nav.no/stats
   liveness:
     path: /isalive
     initialDelay: 20
