@@ -90,10 +90,6 @@ async def get_events():
 def read_root():
     return {"message": "Hello, FastAPI!"}
 
-@app.get("/hello")
-def read_hello():
-    return {"message": "Hello world!"}
-
 @app.get("/isalive")
 def read_isalive():
     return {"message": "Alive"}
