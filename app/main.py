@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
 from databases import Database
-import datetime
+from datetime import datetime
 from dotenv import load_dotenv
 from fastapi.responses import JSONResponse
 
@@ -69,7 +69,7 @@ async def add_stats(analytics: Analytics):
     values = {
         "website_id": analytics.website_id,
         "url": analytics.url,
-        "timestamp": datetime.datetime.utcnow()  # Use datetime object
+        "timestamp": datetime.utcnow().replace(second=0, microsecond=0)  # Use datetime object
     }
     try:
         await database.execute(query=query, values=values)
