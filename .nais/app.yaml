@@ -7,6 +7,8 @@ metadata:
   name: reops-fastapi
   namespace: team-researchops
 spec:
+  envFrom:
+    - secret: fastapi-secrets
   image: "{{ image }}"
   port: 8080
   replicas:
