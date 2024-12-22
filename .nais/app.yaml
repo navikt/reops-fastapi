@@ -25,7 +25,7 @@ spec:
   ingresses:
     - https://fastapi.ansatt.nav.no
     - https://fastapi.intern.nav.no
-    - https://fastapi.nav.no/stats
+    - https://fastapi.nav.no/api/send
   liveness:
     path: /api/isalive
     initialDelay: 20
