@@ -1,6 +1,5 @@
 import os
 import logging
-import asyncio
 from fastapi import FastAPI, HTTPException, Response, BackgroundTasks, Depends
 from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, MetaData
@@ -9,7 +8,6 @@ from sqlalchemy.orm import sessionmaker, Session
 from datetime import datetime
 from dotenv import load_dotenv
 from fastapi.responses import JSONResponse
-import ssl
 from typing import List
 
 load_dotenv()
@@ -44,7 +42,6 @@ engine = create_engine(
 # Create a database session maker
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-
 def get_db():
     db = SessionLocal()
     try:
@@ -73,7 +70,6 @@ class AnalyticsModel(BaseModel):
     event_type: str
 
     class Config:
-        orm_mode = True
         from_attributes = True
 
 @app.exception_handler(Exception)
@@ -97,14 +93,8 @@ def shutdown():
         engine.pool.dispose()
         logger.info("Database connection pool disposed.")
 
-
-async def ensure_connection():
-    # No need for connection logic as engine manages it
-    pass
-
 @app.post("/api/send", response_model=AnalyticsModel)
 async def add_stats(analytics: AnalyticsModel, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    background_tasks.add_task(ensure_connection)
     new_analytics = Analytics(
         website_id=analytics.website_id,
         url=analytics.url,
@@ -123,7 +113,6 @@ async def add_stats(analytics: AnalyticsModel, background_tasks: BackgroundTasks
 
 @app.get("/api/data", response_model=List[AnalyticsModel])
 async def get_events(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    background_tasks.add_task(ensure_connection)
     try:
         results = db.query(Analytics).all()
         return [AnalyticsModel.from_orm(result) for result in results]
