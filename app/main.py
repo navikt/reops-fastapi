@@ -6,6 +6,7 @@ from databases import Database
 from datetime import datetime
 from dotenv import load_dotenv
 from fastapi.responses import JSONResponse
+import ssl
 
 # Load environment variables from .env file
 load_dotenv()
@@ -41,7 +42,10 @@ def check_ssl_files():
     ]
     for file in ssl_files:
         if os.path.exists(file):
-            logger.info(f"SSL file found: {file}")
+            if os.access(file, os.R_OK):
+                logger.info(f"SSL file found and readable: {file}")
+            else:
+                logger.error(f"SSL file found but not readable: {file}")
         else:
             logger.error(f"SSL file not found: {file}")
 
@@ -56,7 +60,7 @@ async def generic_exception_handler(request, exc):
 
 @app.on_event("startup")
 async def startup():
-    check_ssl_files()  # Check SSL files before attempting to connect to the database
+    check_ssl_files()
     retries = 5
     for i in range(retries):
         try:
@@ -65,8 +69,10 @@ async def startup():
             break
         except Exception as e:
             logger.error(f"Database connection failed: {e}")
+            if isinstance(e, ssl.SSLError):
+                logger.error(f"SSL Error details: {e.__class__.__name__}: {e}")
             if i < retries - 1:
-                await asyncio.sleep(2 ** i)  # Exponential backoff
+                await asyncio.sleep(2 ** i)
             else:
                 logger.critical("Could not connect to the database after retries. Exiting application.")
                 raise SystemExit("Database connection failed.")
