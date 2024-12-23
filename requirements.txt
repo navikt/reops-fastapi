@@ -3,4 +3,3 @@ uvicorn
 databases
 asyncpg
 python-dotenv
-ssl
