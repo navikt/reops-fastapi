@@ -49,7 +49,6 @@ def get_db():
     finally:
         db.close()
 
-
 app = FastAPI()
 
 # Model definition for database table
@@ -85,7 +84,6 @@ async def startup():
     # No need for async task here, as engine creation handles connection
     engine.connect()
     logger.info("Database connection established.")
-
 
 @app.on_event("shutdown")
 def shutdown():
@@ -123,7 +121,6 @@ async def get_events(background_tasks: BackgroundTasks, db: Session = Depends(ge
 @app.get("/api/isalive")
 def read_isalive():
     return {"message": "Alive"}
-
 
 @app.get("/api/isready")
 def read_isready():
