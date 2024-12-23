@@ -31,6 +31,9 @@ if not DATABASE_URL:
 database = Database(DATABASE_URL)
 app = FastAPI()
 
+# Flag to indicate if the initial database check has been skipped
+initial_check_skipped = False
+
 class Analytics(BaseModel):
     website_id: int
     url: str
@@ -51,7 +54,6 @@ def check_ssl_files():
         else:
             logger.error(f"SSL file not found: {file}")
 
-
 @app.exception_handler(Exception)
 async def generic_exception_handler(request, exc):
     logger.error(f"Unhandled error: {exc}")
@@ -62,8 +64,10 @@ async def generic_exception_handler(request, exc):
 
 @app.on_event("startup")
 async def startup():
-    if SKIP_DB_CHECK:
+    global initial_check_skipped
+    if SKIP_DB_CHECK and not initial_check_skipped:
         logger.info("Skipping database connection check during startup.")
+        initial_check_skipped = True
         return
 
     check_ssl_files()
@@ -90,6 +94,9 @@ async def shutdown():
 
 @app.post("/api/send")
 async def add_stats(analytics: Analytics):
+    if not database.is_connected:
+        await database.connect()
+
     query = """
         INSERT INTO analytics (website_id, url, event_type, timestamp)
         VALUES (:website_id, :url, :event_type, :timestamp)
@@ -109,6 +116,9 @@ async def add_stats(analytics: Analytics):
 
 @app.get("/api/data")
 async def get_events():
+    if not database.is_connected:
+        await database.connect()
+
     query = """
         SELECT * FROM analytics
     """
