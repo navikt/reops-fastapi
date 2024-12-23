@@ -18,7 +18,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-SKIP_DB_CHECK = os.getenv("SKIP_DB_CHECK", "false").lower() == "true"
 
 if not DATABASE_URL:
     logger.error("DATABASE_URL is not set. Please check your environment variables.")
@@ -62,7 +61,6 @@ class Analytics(Base):
     event_type = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
 
-
 class AnalyticsModel(BaseModel):
     website_id: int
     url: str
@@ -72,24 +70,6 @@ class AnalyticsModel(BaseModel):
         orm_mode = True
         from_attributes = True
 
-
-
-def check_ssl_files():
-    ssl_files = [
-        "/var/run/secrets/nais.io/sqlcertificate/cert.pem",
-        "/var/run/secrets/nais.io/sqlcertificate/key.pem",
-        "/var/run/secrets/nais.io/sqlcertificate/root-cert.pem"
-    ]
-    for file in ssl_files:
-        if os.path.exists(file):
-            if os.access(file, os.R_OK):
-                logger.info(f"SSL file found and readable: {file}")
-            else:
-                logger.error(f"SSL file found but not readable: {file}")
-        else:
-            logger.error(f"SSL file not found: {file}")
-
-
 @app.exception_handler(Exception)
 async def generic_exception_handler(request, exc):
     logger.error(f"Unhandled error: {exc}")
@@ -98,14 +78,11 @@ async def generic_exception_handler(request, exc):
         status_code=500
     )
 
-
 @app.on_event("startup")
 async def startup():
-    check_ssl_files()
-    if not SKIP_DB_CHECK:
-        # No need for async task here, as engine creation handles connection
-        engine.connect()
-        logger.info("Database connection established.")
+    # No need for async task here, as engine creation handles connection
+    engine.connect()
+    logger.info("Database connection established.")
 
 
 @app.on_event("shutdown")

@@ -10,8 +10,6 @@ spec:
   env:
     - name: "DATABASE_URL"
       value: "$(NAIS_DATABASE_REOPS_FASTAPI_REOPS_FASTAPI_URL)"
-    - name: "SKIP_DB_CHECK"
-      value: "false"
   image: "{{ image }}"
   port: 8080
   replicas:
