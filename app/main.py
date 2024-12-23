@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException, Response, BackgroundTasks, Depends
 from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, MetaData
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from datetime import datetime
 from dotenv import load_dotenv
 from fastapi.responses import JSONResponse
