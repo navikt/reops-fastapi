@@ -19,10 +19,6 @@ spec:
     requests:
       cpu: 50m
       memory: 128Mi
-  accessPolicy:
-    outbound:
-      external:
-        - ipv4: 34.88.239.95
   gcp:
     sqlInstances:
       - type: POSTGRES_17
