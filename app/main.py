@@ -63,12 +63,13 @@ async def shutdown():
 @app.post("/api/send")
 async def add_stats(analytics: Analytics):
     query = """
-        INSERT INTO analytics (website_id, url, timestamp)
-        VALUES (:website_id, :url, :timestamp)
+        INSERT INTO analytics (website_id, url, event_type, timestamp)
+        VALUES (:website_id, :url, :event_type, :timestamp)
     """
     values = {
         "website_id": analytics.website_id,
         "url": analytics.url,
+        "event_type": analytics.event_type,
         "timestamp": datetime.utcnow().replace(second=0, microsecond=0)  # Use datetime object
     }
     try:
