@@ -120,33 +120,33 @@ async def ensure_connection():
 
 
 @app.post("/api/send", response_model=AnalyticsModel)
-async def add_stats(analytics: AnalyticsModel, background_tasks: BackgroundTasks):
+async def add_stats(analytics: AnalyticsModel, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     background_tasks.add_task(ensure_connection)
-    query = """
-        INSERT INTO analytics (website_id, url, event_type, timestamp)
-        VALUES (:website_id, :url, :event_type, :timestamp)
-    """
-    values = {
-        "website_id": analytics.website_id,
-        "url": analytics.url,
-        "event_type": analytics.event_type,
-        "timestamp": datetime.utcnow().replace(second=0, microsecond=0)
-    }
+    new_analytics = Analytics(
+        website_id=analytics.website_id,
+        url=analytics.url,
+        event_type=analytics.event_type,
+        timestamp=datetime.utcnow().replace(second=0, microsecond=0)
+    )
     try:
-        await database.execute(query=query, values=values)
-        return analytics
+        db.add(new_analytics)
+        db.commit()
+        db.refresh(new_analytics)
+        return new_analytics
     except Exception as e:
+        db.rollback()
         logger.error(f"Failed to insert stats: {e}")
         raise HTTPException(status_code=500, detail="Failed to add stats.")
 
-
 @app.get("/api/data", response_model=List[AnalyticsModel])
-async def get_events(background_tasks: BackgroundTasks):
+async def get_events(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     background_tasks.add_task(ensure_connection)
-    query = "SELECT * FROM analytics"
-    results = await database.fetch_all(query=query)
-    return [AnalyticsModel.from_orm(result) for result in results]
-
+    try:
+        results = db.query(Analytics).all()
+        return [AnalyticsModel.from_orm(result) for result in results]
+    except Exception as e:
+        logger.error(f"Failed to fetch events: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch events.")
 
 @app.get("/api/isalive")
 def read_isalive():
