@@ -1,7 +1,7 @@
 import os
 import logging
 import asyncio
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException, Response, BackgroundTasks
 from pydantic import BaseModel
 from databases import Database
 from datetime import datetime
@@ -9,30 +9,19 @@ from dotenv import load_dotenv
 from fastapi.responses import JSONResponse
 import ssl
 
-# Load environment variables from .env file
 load_dotenv()
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Retrieve the DATABASE_URL environment variable
 DATABASE_URL = os.getenv("DATABASE_URL")
 SKIP_DB_CHECK = os.getenv("SKIP_DB_CHECK", "false").lower() == "true"
 
-if DATABASE_URL:
-    logger.info(f"DATABASE_URL is set to: {DATABASE_URL}")
-
-# Check if the DATABASE_URL environment variable is set
 if not DATABASE_URL:
     logger.error("DATABASE_URL is not set. Please check your environment variables.")
 
-# Initialize the database connection
 database = Database(DATABASE_URL)
 app = FastAPI()
-
-# Flag to indicate if the initial database check has been skipped
-initial_check_skipped = False
 
 class Analytics(BaseModel):
     website_id: int
@@ -62,41 +51,39 @@ async def generic_exception_handler(request, exc):
         status_code=500
     )
 
-@app.on_event("startup")
-async def startup():
-    global initial_check_skipped
-    if SKIP_DB_CHECK and not initial_check_skipped:
-        logger.info("Skipping database connection check during startup.")
-        initial_check_skipped = True
-        return
-
-    check_ssl_files()
-    retries = 5
-    for i in range(retries):
+async def connect_to_db():
+    while True:
         try:
             await database.connect()
             logger.info("Database connection established.")
-            break
+            return
         except Exception as e:
             logger.error(f"Database connection failed: {e}")
             if isinstance(e, ssl.SSLError):
                 logger.error(f"SSL Error details: {e.__class__.__name__}: {e}")
-            if i < retries - 1:
-                await asyncio.sleep(2 ** i)
-            else:
-                logger.critical("Could not connect to the database after retries. Exiting application.")
-                raise SystemExit("Database connection failed.")
+            await asyncio.sleep(5)
+
+@app.on_event("startup")
+async def startup(background_tasks: BackgroundTasks):
+    check_ssl_files()
+    if not SKIP_DB_CHECK:
+        background_tasks.add_task(connect_to_db)
+    else:
+        logger.info("Skipping initial database connection check.")
 
 @app.on_event("shutdown")
 async def shutdown():
-    await database.disconnect()
-    logger.info("Database connection closed.")
+    if database.is_connected:
+        await database.disconnect()
+        logger.info("Database connection closed.")
+
+async def ensure_connection():
+    if not database.is_connected:
+        await connect_to_db()
 
 @app.post("/api/send")
-async def add_stats(analytics: Analytics):
-    if not database.is_connected:
-        await database.connect()
-
+async def add_stats(analytics: Analytics, background_tasks: BackgroundTasks):
+    background_tasks.add_task(ensure_connection)
     query = """
         INSERT INTO analytics (website_id, url, event_type, timestamp)
         VALUES (:website_id, :url, :event_type, :timestamp)
@@ -105,7 +92,7 @@ async def add_stats(analytics: Analytics):
         "website_id": analytics.website_id,
         "url": analytics.url,
         "event_type": analytics.event_type,
-        "timestamp": datetime.utcnow().replace(second=0, microsecond=0)  # Use datetime object
+        "timestamp": datetime.utcnow().replace(second=0, microsecond=0)
     }
     try:
         await database.execute(query=query, values=values)
@@ -115,13 +102,9 @@ async def add_stats(analytics: Analytics):
         raise HTTPException(status_code=500, detail="Failed to add stats.")
 
 @app.get("/api/data")
-async def get_events():
-    if not database.is_connected:
-        await database.connect()
-
-    query = """
-        SELECT * FROM analytics
-    """
+async def get_events(background_tasks: BackgroundTasks):
+    background_tasks.add_task(ensure_connection)
+    query = "SELECT * FROM analytics"
     results = await database.fetch_all(query=query)
     return {"events": [dict(result) for result in results]}
 
@@ -131,9 +114,11 @@ def read_isalive():
 
 @app.get("/api/isready")
 async def read_isready():
+    if not database.is_connected:
+        return JSONResponse(content={"message": "Not ready", "details": "Database not connected"}, status_code=503)
     try:
-        await database.execute("SELECT 1")  # Simple query to check database readiness
+        await database.execute("SELECT 1")
         return {"message": "Ready"}
     except Exception as e:
         logger.error(f"Readiness check failed: {e}")
-        return {"message": "Not ready", "details": str(e)}, 503
+        return JSONResponse(content={"message": "Not ready", "details": str(e)}, status_code=503)
