@@ -11,11 +11,14 @@ from fastapi.responses import JSONResponse
 load_dotenv()
 
 # Configure logging
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Retrieve the DATABASE_URL environment variable
 DATABASE_URL = os.getenv("DATABASE_URL")
+
+if DATABASE_URL:
+    logger.info(f"DATABASE_URL is set to: {DATABASE_URL}")
 
 # Check if the DATABASE_URL environment variable is set
 if not DATABASE_URL:
