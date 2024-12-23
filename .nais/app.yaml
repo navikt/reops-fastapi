@@ -7,8 +7,9 @@ metadata:
   name: reops-fastapi
   namespace: team-researchops
 spec:
-  envFrom:
-    - secret: fastapi-secrets
+  env:
+    - name: "DATABASE_URL"
+      value: "$(NAIS_DATABASE_REOPS_FASTAPI_REOPS_FASTAPI_URL)"
   image: "{{ image }}"
   port: 8080
   replicas:
