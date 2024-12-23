@@ -71,6 +71,7 @@ class AnalyticsModel(BaseModel):
 
     class Config:
         orm_mode = True
+        from_attributes = True
 
 
 def check_ssl_files():
