@@ -1,7 +1,7 @@
 import os
 import logging
 import asyncio
-from fastapi import FastAPI, HTTPException, Response, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Response, BackgroundTasks, Depends
 from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, MetaData
 from sqlalchemy.ext.declarative import declarative_base
