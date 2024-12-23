@@ -64,10 +64,10 @@ async def connect_to_db():
             await asyncio.sleep(5)
 
 @app.on_event("startup")
-async def startup(background_tasks: BackgroundTasks):
+async def startup():
     check_ssl_files()
     if not SKIP_DB_CHECK:
-        background_tasks.add_task(connect_to_db)
+        asyncio.create_task(connect_to_db())
     else:
         logger.info("Skipping initial database connection check.")
 
