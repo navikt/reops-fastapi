@@ -112,13 +112,7 @@ async def get_events(background_tasks: BackgroundTasks):
 def read_isalive():
     return {"message": "Alive"}
 
+
 @app.get("/api/isready")
-async def read_isready():
-    if not database.is_connected:
-        return JSONResponse(content={"message": "Not ready", "details": "Database not connected"}, status_code=503)
-    try:
-        await database.execute("SELECT 1")
-        return {"message": "Ready"}
-    except Exception as e:
-        logger.error(f"Readiness check failed: {e}")
-        return JSONResponse(content={"message": "Not ready", "details": str(e)}, status_code=503)
+def read_isready():
+    return {"message": "Ready"}
