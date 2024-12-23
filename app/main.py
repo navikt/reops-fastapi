@@ -22,17 +22,23 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     logger.error("DATABASE_URL is not set. Please check your environment variables.")
 
-# Configure connection engine with SSL parameters
+FORCE_SSL = os.getenv("FORCE_SSL", "false").lower() == "true"
+
+connect_args = {}
+if FORCE_SSL:
+    connect_args = {
+        "sslmode": "verify-ca",
+        "sslrootcert": os.getenv("SSL_ROOT_CERT"),
+        "sslcert": os.getenv("SSL_CERT"),
+        "sslkey": os.getenv("SSL_KEY")
+    }
+
+# Configure connection engine with conditional SSL parameters
 engine = create_engine(
     DATABASE_URL,
     pool_size=5,  # Configure connection pool for better performance
     pool_recycle=300,  # Connection pool recycle time
-    connect_args={
-        "sslmode": "verify-ca",
-        "sslrootcert": "/var/run/secrets/nais.io/sqlcertificate/root-cert.pem",
-        "sslcert": "/var/run/secrets/nais.io/sqlcertificate/cert.pem",
-        "sslkey": "/var/run/secrets/nais.io/sqlcertificate/key.pem"
-    }
+    connect_args=connect_args
 )
 
 # Create a database session maker
