@@ -51,12 +51,12 @@ def check_ssl_files():
         else:
             logger.error(f"SSL file not found: {file}")
 
+
 @app.exception_handler(Exception)
 async def generic_exception_handler(request, exc):
     logger.error(f"Unhandled error: {exc}")
-    return Response(
-        content='{"message": "An internal server error occurred. Please try again later."}',
-        media_type="application/json",
+    return JSONResponse(
+        content={"message": "An internal server error occurred. Please try again later.", "details": str(exc)},
         status_code=500
     )
 
