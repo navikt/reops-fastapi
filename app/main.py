@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Retrieve the DATABASE_URL environment variable
 DATABASE_URL = os.getenv("DATABASE_URL")
+SKIP_DB_CHECK = os.getenv("SKIP_DB_CHECK", "false").lower() == "true"
 
 if DATABASE_URL:
     logger.info(f"DATABASE_URL is set to: {DATABASE_URL}")
@@ -61,6 +62,10 @@ async def generic_exception_handler(request, exc):
 
 @app.on_event("startup")
 async def startup():
+    if SKIP_DB_CHECK:
+        logger.info("Skipping database connection check during startup.")
+        return
+
     check_ssl_files()
     retries = 5
     for i in range(retries):
