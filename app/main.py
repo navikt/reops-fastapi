@@ -33,6 +33,18 @@ class Analytics(BaseModel):
     url: str
     event_type: str
 
+def check_ssl_files():
+    ssl_files = [
+        "/var/run/secrets/nais.io/sqlcertificate/cert.pem",
+        "/var/run/secrets/nais.io/sqlcertificate/key.pem",
+        "/var/run/secrets/nais.io/sqlcertificate/root-cert.pem"
+    ]
+    for file in ssl_files:
+        if os.path.exists(file):
+            logger.info(f"SSL file found: {file}")
+        else:
+            logger.error(f"SSL file not found: {file}")
+
 @app.exception_handler(Exception)
 async def generic_exception_handler(request, exc):
     logger.error(f"Unhandled error: {exc}")
@@ -44,6 +56,7 @@ async def generic_exception_handler(request, exc):
 
 @app.on_event("startup")
 async def startup():
+    check_ssl_files()
     retries = 5
     for i in range(retries):
         try:
