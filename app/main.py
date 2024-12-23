@@ -56,7 +56,7 @@ async def generic_exception_handler(request, exc):
 
 @app.on_event("startup")
 async def startup():
-    check_ssl_files()
+    check_ssl_files()  # Check SSL files before attempting to connect to the database
     retries = 5
     for i in range(retries):
         try:
