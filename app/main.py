@@ -67,11 +67,11 @@ class AnalyticsModel(BaseModel):
     website_id: int
     url: str
     event_type: str
-    timestamp: datetime
 
     class Config:
         orm_mode = True
         from_attributes = True
+
 
 
 def check_ssl_files():
@@ -118,7 +118,6 @@ def shutdown():
 async def ensure_connection():
     # No need for connection logic as engine manages it
     pass
-
 
 @app.post("/api/send", response_model=AnalyticsModel)
 async def add_stats(analytics: AnalyticsModel, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
