@@ -19,7 +19,7 @@ spec:
     - name: "SSL_KEY"
       value: "/var/run/secrets/nais.io/sqlcertificate/key.pem"
   image: "{{ image }}"
-  port: 8080
+  port: 8085
   replicas:
     max: 1
     min: 1
