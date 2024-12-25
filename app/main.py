@@ -3,14 +3,29 @@ import logging
 from fastapi import FastAPI, HTTPException, Response, BackgroundTasks, Depends
 from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, MetaData
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql import func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from datetime import datetime
 from dotenv import load_dotenv
 from fastapi.responses import JSONResponse
 from typing import List
+from fastapi.middleware.cors import CORSMiddleware
+import uuid as uuid_lib
+from pydantic import UUID4
 
 load_dotenv()
+app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],  # Allows all methods
+    allow_headers=["Content-Type"],  # Allows all headers
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -49,23 +64,25 @@ def get_db():
     finally:
         db.close()
 
-app = FastAPI()
-
 # Model definition for database table
 Base = declarative_base()
 
 class Analytics(Base):
     __tablename__ = "analytics"
 
-    id = Column(Integer, primary_key=True)
-    website_id = Column(Integer)
-    url = Column(String)
+    event_id = Column(UUID(as_uuid=True), primary_key=True, default=func.uuid_generate_v4())
+    website_id = Column(String)
+    url_host = Column(String)
+    url_path = Column(String)
+    url_search = Column(String)
     event_type = Column(String)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 class AnalyticsModel(BaseModel):
-    website_id: int
-    url: str
+    website_id: UUID4
+    url_host: str
+    url_path: str
+    url_search: str
     event_type: str
 
     class Config:
@@ -94,10 +111,12 @@ def shutdown():
 @app.post("/api/send", response_model=AnalyticsModel)
 async def add_stats(analytics: AnalyticsModel, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     new_analytics = Analytics(
-        website_id=analytics.website_id,
-        url=analytics.url,
+        website_id=uuid_lib.UUID(str(analytics.website_id)),
         event_type=analytics.event_type,
-        timestamp=datetime.utcnow().replace(second=0, microsecond=0)
+        url_host=analytics.url_host,
+        url_path=analytics.url_path,
+        url_search=analytics.url_search,
+        created_at=datetime.utcnow().replace(microsecond=0)
     )
     try:
         db.add(new_analytics)
