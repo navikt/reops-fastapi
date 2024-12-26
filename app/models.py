@@ -20,5 +20,5 @@ class Apps(Base):
     __tablename__ = "apps"
 
     app_id = Column(UUID(as_uuid=True), primary_key=True, default=func.uuid_generate_v4())
-    name = Column(String)
+    app_name = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)

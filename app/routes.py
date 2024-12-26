@@ -34,14 +34,14 @@ async def add_stats(events: EventsModel, background_tasks: BackgroundTasks, db: 
 @router.post("/api/apps", response_model=AppsModel)
 async def add_stats(apps: AppsModel, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     new_app = Apps(
-        name=apps.name,
+        app_name=apps.app_name,
         created_at=datetime.utcnow().replace(microsecond=0)
     )
     try:
-        db.add(new_apps)
+        db.add(new_app)
         db.commit()
-        db.refresh(new_apps)
-        return new_apps
+        db.refresh(new_app)
+        return new_app
     except Exception as e:
         db.rollback()
         logger.error(f"Failed to insert stats: {e}")

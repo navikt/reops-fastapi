@@ -11,4 +11,4 @@ class EventsModel(BaseModel):
         from_attributes = True
 
 class AppsModel(BaseModel):
-    name: str
+    app_name: str
