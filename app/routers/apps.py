@@ -6,7 +6,7 @@ from pydantic import UUID4
 import logging
 from ..database import get_db
 from ..models import Apps, Events  # Import Events model
-from ..schemas import AppsModel, AppsResponseModel
+from ..schemas import AppsModel, AppsResponseModel, AppsUpdateModel
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -68,3 +68,24 @@ async def delete_app(app_id: UUID4, db: Session = Depends(get_db)):
         db.rollback()
         logger.error(f"Failed to delete app: {e}")
         raise HTTPException(status_code=500, detail="Failed to delete app.")
+
+# Update app details
+@router.put("/api/apps/{app_id}", response_model=AppsResponseModel, tags=["Apps"])
+async def update_app(app_id: UUID4, app_update: AppsUpdateModel, db: Session = Depends(get_db)):
+    try:
+        app_to_update = db.query(Apps).filter(Apps.app_id == app_id).first()
+        if not app_to_update:
+            raise HTTPException(status_code=404, detail="App not found")
+
+        if app_update.app_name is not None:
+            app_to_update.app_name = app_update.app_name
+        if app_update.is_active is not None:
+            app_to_update.is_active = app_update.is_active
+
+        db.commit()
+        db.refresh(app_to_update)
+        return app_to_update
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to update app: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update app.")

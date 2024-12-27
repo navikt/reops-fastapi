@@ -6,7 +6,7 @@ import uuid as uuid_lib
 from datetime import datetime
 import logging
 from ..database import get_db
-from ..models import Events
+from ..models import Events, Apps
 from ..schemas import EventsModel, EventsResponseModel
 
 router = APIRouter()
@@ -14,7 +14,14 @@ logger = logging.getLogger(__name__)
 
 # Send events
 @router.post("/api/send", response_model=EventsModel, tags=["Events"])
-async def add_stats(events: EventsModel, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def add_events(events: EventsModel, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    # Check if the app is active
+    app = db.query(Apps).filter(Apps.app_id == events.app_id).first()
+    if not app:
+        raise HTTPException(status_code=404, detail="App not found")
+    if not app.is_active:
+        raise HTTPException(status_code=400, detail="App is inactive")
+
     new_events = Events(
         app_id=uuid_lib.UUID(str(events.app_id)),
         event_name=events.event_name,
@@ -66,16 +73,23 @@ async def get_events(
 # Delete all events by app_id
 @router.delete("/api/events/{app_id}", response_model=List[EventsResponseModel], tags=["Events"])
 async def delete_events_by_app_id(app_id: UUID4, db: Session = Depends(get_db)):
-   try:
-       events_to_delete = db.query(Events).filter(Events.app_id == app_id).all()
-       if not events_to_delete:
-           raise HTTPException(status_code=404, detail="No events found for the given app_id")
+    # Check if the app is active
+    app = db.query(Apps).filter(Apps.app_id == app_id).first()
+    if not app:
+        raise HTTPException(status_code=404, detail="App not found")
+    if app.is_active:
+        raise HTTPException(status_code=400, detail="App must be deactivated before deletion")
 
-       for event in events_to_delete:
-           db.delete(event)
-       db.commit()
-       return events_to_delete
-   except Exception as e:
-       db.rollback()
-       logger.error(f"Failed to delete events: {e}")
-       raise HTTPException(status_code=500, detail="Failed to delete events.")
+    events_to_delete = db.query(Events).filter(Events.app_id == app_id).all()
+    if not events_to_delete:
+        raise HTTPException(status_code=404, detail="No events found for the given app_id")
+
+    try:
+        for event in events_to_delete:
+            db.delete(event)
+        db.commit()
+        return events_to_delete
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to delete events: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete events.")
