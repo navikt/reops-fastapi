@@ -43,7 +43,7 @@ spec:
     inbound:
       rules:
         - application: delta-frontend
-          namespace: team-researchops
+          namespace: delta
   ingresses:
     - https://fastapi.ansatt.nav.no
     - https://fastapi.intern.nav.no
