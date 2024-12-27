@@ -72,7 +72,7 @@ async def get_events(
 
 # Delete all events by app_id
 @router.delete("/api/events/{app_id}", response_model=List[EventsResponseModel], tags=["Events"])
-async def delete_events_by_app_id(app_id: UUID4, db: Session = Depends(get_db)):
+async def delete_all_events_by_app_id(app_id: UUID4, db: Session = Depends(get_db)):
     # Check if the app is active
     app = db.query(Apps).filter(Apps.app_id == app_id).first()
     if not app:
