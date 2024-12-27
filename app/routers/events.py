@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from pydantic import UUID4
 import uuid as uuid_lib
 from datetime import datetime
@@ -12,6 +12,7 @@ from ..schemas import EventsModel, EventsResponseModel
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+# Send events
 @router.post("/api/send", response_model=EventsModel, tags=["Events"])
 async def add_stats(events: EventsModel, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     new_events = Events(
@@ -32,20 +33,32 @@ async def add_stats(events: EventsModel, background_tasks: BackgroundTasks, db: 
         logger.error(f"Failed to insert stats: {e}")
         raise HTTPException(status_code=500, detail="Failed to add stats.")
 
+# Get all events or filter by app_id, url_host, url_path, url_query, event_name
 @router.get("/api/events", response_model=List[EventsResponseModel], tags=["Events"])
-async def get_events(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def get_events(
+    app_id: Optional[UUID4] = Query(None),
+    url_host: Optional[str] = Query(None),
+    url_path: Optional[str] = Query(None),
+    url_query: Optional[str] = Query(None),
+    event_name: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
     try:
-        results = db.query(Events).all()
+        query = db.query(Events)
+        if app_id:
+            query = query.filter(Events.app_id == app_id)
+        if url_host:
+            query = query.filter(Events.url_host == url_host)
+        if url_path:
+            query = query.filter(Events.url_path == url_path)
+        if url_query:
+            query = query.filter(Events.url_query == url_query)
+        if event_name:
+            query = query.filter(Events.event_name == event_name)
+        results = query.all()
+        if not results:
+            raise HTTPException(status_code=404, detail="Events not found")
         return [EventsResponseModel.from_orm(result) for result in results]
     except Exception as e:
         logger.error(f"Failed to fetch events: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch events.")
-
-@router.get("/api/{app_id}/events", response_model=List[EventsResponseModel], tags=["Events"])
-async def get_events_for_app(app_id: UUID4, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    try:
-        results = db.query(Events).filter(Events.app_id == app_id).all()
-        return [EventsResponseModel.from_orm(result) for result in results]
-    except Exception as e:
-        logger.error(f"Failed to fetch events for app {app_id}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch events for app.")
