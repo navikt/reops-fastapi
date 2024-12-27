@@ -5,7 +5,7 @@ from datetime import datetime
 from pydantic import UUID4
 import logging
 from ..database import get_db
-from ..models import Apps
+from ..models import Apps, Events  # Import Events model
 from ..schemas import AppsModel, AppsResponseModel
 
 router = APIRouter()
@@ -44,3 +44,27 @@ async def get_apps(app_id: Optional[UUID4] = Query(None), app_name: Optional[str
     except Exception as e:
         logger.error(f"Failed to fetch apps: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch apps.")
+
+# Delete an app by app_id
+@router.delete("/api/apps/{app_id}", response_model=AppsResponseModel, tags=["Apps"])
+async def delete_app(app_id: UUID4, db: Session = Depends(get_db)):
+    try:
+        # Check if there are any events with the same app_id
+        events_exist = db.query(Events).filter(Events.app_id == app_id).first()
+        if events_exist:
+            raise HTTPException(status_code=400, detail="You have to delete events before deleting the app.")
+
+        # Proceed to delete the app
+        app_to_delete = db.query(Apps).filter(Apps.app_id == app_id).first()
+        if not app_to_delete:
+            raise HTTPException(status_code=404, detail="App not found")
+
+        db.delete(app_to_delete)
+        db.commit()
+        return app_to_delete
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to delete app: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete app.")

@@ -62,3 +62,20 @@ async def get_events(
     except Exception as e:
         logger.error(f"Failed to fetch events: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch events.")
+
+# Delete all events by app_id
+@router.delete("/api/events/{app_id}", response_model=List[EventsResponseModel], tags=["Events"])
+async def delete_events_by_app_id(app_id: UUID4, db: Session = Depends(get_db)):
+   try:
+       events_to_delete = db.query(Events).filter(Events.app_id == app_id).all()
+       if not events_to_delete:
+           raise HTTPException(status_code=404, detail="No events found for the given app_id")
+
+       for event in events_to_delete:
+           db.delete(event)
+       db.commit()
+       return events_to_delete
+   except Exception as e:
+       db.rollback()
+       logger.error(f"Failed to delete events: {e}")
+       raise HTTPException(status_code=500, detail="Failed to delete events.")
