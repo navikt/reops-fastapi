@@ -28,7 +28,7 @@ async def add_app(apps: AppsModel, background_tasks: BackgroundTasks, db: Sessio
         logger.error(f"Failed to insert app: {e}")
         raise HTTPException(status_code=500, detail="Failed to add app.")
 
-# Get all apps or filter by app_id or app_name
+# Get all apps or filter by app_id or app_name (partial match)
 @router.get("/api/apps", response_model=List[AppsResponseModel], tags=["Apps"])
 async def get_apps(app_id: Optional[UUID4] = Query(None), app_name: Optional[str] = Query(None), db: Session = Depends(get_db)):
     try:
@@ -36,7 +36,7 @@ async def get_apps(app_id: Optional[UUID4] = Query(None), app_name: Optional[str
         if app_id:
             query = query.filter(Apps.app_id == app_id)
         if app_name:
-            query = query.filter(Apps.app_name == app_name)
+            query = query.filter(Apps.app_name.like(f"%{app_name}%"))
         results = query.all()
         if not results:
             raise HTTPException(status_code=404, detail="App not found")
