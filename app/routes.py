@@ -18,7 +18,7 @@ async def add_stats(events: EventsModel, background_tasks: BackgroundTasks, db: 
         event_name=events.event_name,
         url_host=events.url_host,
         url_path=events.url_path,
-        url_search=events.url_search,
+        url_query=events.url_query,
         created_at=datetime.utcnow().replace(microsecond=0)
     )
     try:

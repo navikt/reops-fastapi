@@ -4,7 +4,7 @@ class EventsModel(BaseModel):
     app_id: UUID4
     url_host: str
     url_path: str
-    url_search: str
+    url_query: str
     event_name: str
 
     class Config:

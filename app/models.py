@@ -11,7 +11,7 @@ class Events(Base):
     app_id = Column(String)
     url_host = Column(String)
     url_path = Column(String)
-    url_search = Column(String)
+    url_query = Column(String)
     event_name = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
 
