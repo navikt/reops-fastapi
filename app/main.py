@@ -1,11 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from .routes import router
+from app.routers import apps, events, health
 from .database import engine
 from .config import logger
 
 app = FastAPI()
+
+app.include_router(apps)
+app.include_router(events)
+app.include_router(health)
 
 app.add_middleware(
     CORSMiddleware,
@@ -14,8 +18,6 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type"],
 )
-
-app.include_router(router)
 
 @app.exception_handler(Exception)
 async def generic_exception_handler(request, exc):
