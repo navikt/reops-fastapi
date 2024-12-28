@@ -44,6 +44,9 @@ spec:
       rules:
         - application: delta-frontend
           namespace: delta
+        - application: reops-felgen
+          namespace: team-researchops
+
   ingresses:
     - https://fastapi.ansatt.nav.no
     - https://fastapi.intern.nav.no
