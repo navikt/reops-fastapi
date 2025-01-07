@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from app.routers import apps, events, health
+from app.routers import apps, events, health, docs
 from .database import engine
 from .config import logger
 
@@ -10,6 +10,7 @@ app = FastAPI()
 app.include_router(apps)
 app.include_router(events)
 app.include_router(health)
+app.include_router(docs)
 
 app.add_middleware(
     CORSMiddleware,
