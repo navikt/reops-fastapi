@@ -1,7 +1,7 @@
 Reops FastApi
 =============
 
-Foreløpig bare en eksperiment.
+Foreløpig bare et eksperiment.
 
 
 # Henvendelser og veiledning
